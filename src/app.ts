@@ -1,7 +1,6 @@
-import express from 'express'
+import express, { Request, Response } from 'express'
 import Chira, { Configuration } from 'chira'
-
-const app = express()
+import Logger from './core/logger'
 
 const tempConfig: Configuration = {
   projectName: 'express-ts-chira',
@@ -12,16 +11,30 @@ const tempConfig: Configuration = {
     level: 'debug',
     console: true,
     file: true,
-    autoAddResBody: true,
     format: 'json'
+  },
+  info: {
+    time: 15,
+    size: null,
+    path: './logs/infoLog',
+    console: false,
+    file: true,
+    rawData: false
   }
 }
 
-const logger = new Chira().init(tempConfig, app)
-
+const app = express()
 app.use(express.json({}))
 app.use(express.urlencoded({ extended: true }))
 
-app.get('/', (req, res) => res.send('ok'))
+const chira = new Chira().init(tempConfig, app)
+chira.setSessionId((req: Request, res: Response) => req.headers['request-id'] ? req.headers['request-id'] as string : '')
+
+app.get('/', (req, res) => {
+  const sid = req.headers['request-id'] as string
+  const logger = new Logger(sid)
+  logger.debug('debug', 'debug')
+  res.send('ok')
+})
 
 export default app
